@@ -163,19 +163,11 @@ class App(ctk.CTk):
         team_lbl.pack(pady=10)
         team_lbl.place(relx=0.45, rely=0.3)
 
-        # button to manage team
-        #team_managebtn = ctk.CTkButton(new_window,text="Manage Team", width= 140, height= 40 , font=("Pokemon GB", 12), command=self.manage_team_window)
-        #team_managebtn.pack(pady=10)
-        #team_managebtn.place(relx=0 ,rely=0.36)
-
-        
-
         #user name
         df = pd.read_csv('user_data.csv')
         usernamelabel= ctk.CTkLabel (new_window,text=self.user_entry.get(),width=170,height=50,fg_color="crimson",font=("Pokemon GB", 15))
         usernamelabel.pack(pady=10)
         usernamelabel.place(relx=0.214)
-
 
         #search button
 
@@ -291,9 +283,11 @@ class App(ctk.CTk):
         editname_ent.pack(pady=10)
         editname_ent.place(relx=0.35,rely=0.05)
 
-        saveeditname_btn = ctk.CTkButton(settings_window,text="save",width=20,font=("Pokemon GB",10))
+        saveeditname_btn = ctk.CTkButton(settings_window,text="save",width=20,font=("Pokemon GB",10),command=lambda: self.save_new_username(editname_ent.get()))
         saveeditname_btn.pack(pady=10)
         saveeditname_btn.place(relx=0.82,rely=0.05)
+
+    
 
         deleteaccount_lbl = ctk.CTkLabel(settings_window,text="Delete Account",font=("Pokemon GB",10))
         deleteaccount_lbl.pack(pady=10)
@@ -303,19 +297,62 @@ class App(ctk.CTk):
         deleteaccount_btn.pack(pady=10)
         deleteaccount_btn.place(relx=0.52,rely=0.4)
 
+    
+
+
+    def save_new_username(self, new_username):
+        if new_username.strip() == "":
+            print("Username cannot be empty.")
+            return
+
+        # Read the CSV file
+        df = pd.read_csv('user_data.csv')
+
+        if new_username in df['username'].values:
+            print("This username is already taken. Please choose a different one.")
+            return
+
+        # Update the username for the current user
+        df.loc[df['username'] == self.user, 'username'] = new_username
+
+        # Save the updated DataFrame back to CSV
+        df.to_csv('user_data.csv', index=False)
+
+        # Update the username in memory as well
+        self.user = new_username
+        print(f"Username updated to {self.user}")
+        
+
     def confirmaccountdelete(self):
         confirmaccountdelete=ctk.CTkToplevel(self)
         confirmaccountdelete.title("Confirm Account Delete")
         confirmaccountdelete.geometry("200x100")
         confirmaccountdelete.attributes("-topmost", 1)
 
-        confirmbutton = ctk.CTkButton (confirmaccountdelete,text="CONFIRM",font=("Pokemon GB",15))
+        confirmbutton = ctk.CTkButton (confirmaccountdelete,text="CONFIRM",font=("Pokemon GB",15),command=self.account_deleted)
         confirmbutton.pack()
         confirmbutton.place(relx=0.15,rely=0.3)
 
 
+    def account_deleted(self):
+        df = pd.read_csv('user_data.csv')
+        user_data = df[df['username'] == self.user]
+        user_index = user_data.index[0]
+
+        # removes the user from the dataframe
+        df.drop(user_index, inplace=True)
+
+        # saves the updated dataframe back to the CSV file
+        df.to_csv('user_data.csv', index=False)
+
+        print(f"Account for {self.user} has been deleted.") # for debugging
+        
+    
+
+
         # funtion to open the search window/menu
     def search_window(self):
+        
 
 
         self.current_page = 0 
@@ -330,23 +367,26 @@ class App(ctk.CTk):
         searchentry = ctk.CTkEntry (search_window,placeholder_text="Search by Name or Number",width=400,height=30,text_color='black' , font=("Pokemon GB", 15))
         searchentry.pack(pady=5)
         searchentry.place(relx=0.26,rely=0.03,)
-
         submitbtn =ctk.CTkButton (search_window,text="ENTER", command=lambda:self.search_pokemon(searchentry)) 
         submitbtn.pack(pady=5)
         submitbtn.place(relx=0.6,rely=0.09)
 
-        nextpagebtn = ctk.CTkButton(search_window, text="---->",command=lambda:self.change_page(1, search_window))
+        returnmenubtn = ctk.CTkButton(search_window,text="Return to Pokedex Menu",font=("Pokemon GB", 7), command=self.pokedex_menu)
+        returnmenubtn.pack(pady=10)
+        returnmenubtn.place(relx = 0.18 , rely = 0.09 )
+
+        nextpagebtn = ctk.CTkButton(search_window, text="---->",command=lambda:self.change_page(1, search_window)) # I DONT KNOW WHY THIS BUTTON DOES NOT WANT TO APPEAR
         nextpagebtn.pack(pady=10)
-        nextpagebtn.place(relx= 0.8 , rely = 0.03)
-        
+        nextpagebtn.place(relx= 0.8 , rely = 0.03,sticky='e')
+
         previouspagebtn = ctk.CTkButton(search_window,text="<----",command= lambda:self.change_page(-1 , search_window)) # I DONT KNOW WHY THIS BUTTON DOES NOT WANT TO APPEAR
         previouspagebtn.pack(pady=10)
-        previouspagebtn.place(relx=0.8, rely= 0.06, )
+        previouspagebtn.place(relx=0.3, rely= 0.06, )
 
 
         returnmenubtn = ctk.CTkButton(search_window,text="Return to Pokedex Menu",font=("Pokemon GB", 7))
         returnmenubtn.pack(pady=10)
-        returnmenubtn.place(relx = 0.18 , rely = 0.04)
+        returnmenubtn.place(relx = 0.18 , rely = 0.04 )
 
 
 
@@ -384,7 +424,11 @@ class App(ctk.CTk):
 
                 # create the button that displays the pokemon front facing sprite
                 poke_button = ctk.CTkButton(search_window, text=f' {pokemon_id} ', image=sprite, compound="top", width=100, height=100,command=lambda pokemon_id=pokemon_id: self.show_pokemon_details(pokemon_id))
+                poke_button.pack(pady=10)
                 poke_button.place(relx=xposition, rely=yposition)  
+
+    
+
 
         # function to change the page for pokemon (doesnt seem to want to show the previous page btn)
     def change_page(self, direction, search_window):
